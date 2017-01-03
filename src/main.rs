@@ -2,6 +2,7 @@ extern crate procrs;
 extern crate x11;
 
 use procrs::pid::Pid;
+use std::env;
 use std::ffi::CString;
 use std::mem::zeroed;
 use std::ptr;
@@ -114,6 +115,12 @@ fn activate_window(display: *mut Display, window: Window) {
     send_event(display, window, "_NET_ACTIVE_WINDOW");
 }
 
+fn get_cmdline(display: *mut Display, window: Window) -> Vec<String> {
+    let pid = get_pid(display, window);
+    let process = Pid::new(pid).expect("Failed to fetch cmdline!");
+    process.cmdline
+}
+
 fn main() {
     unsafe {
         let display = XOpenDisplay(ptr::null());
@@ -121,14 +128,20 @@ fn main() {
             panic!("XOpenDisplay failed")
         }
 
-        for window in get_windows(display) {
-            let pid = get_pid(display, window);
-            let process = Pid::new(pid).expect("Failed to fetch cmdline!");
-            let ref cmdline = process.cmdline[0];
-            if cmdline == "/usr/lib/slack/slack" {
-                activate_window(display, window);
+        let windows = get_windows(display);
+        if let Some(command) = env::args().nth(1) {
+            for window in windows {
+                let cmdline = get_cmdline(display, window);
+                if cmdline[0] == command {
+                    activate_window(display, window);
+                    break;
+                }
             }
-            println!("cmdline: {}", cmdline);
+        } else {
+            for window in windows {
+                let cmdline = get_cmdline(display, window);
+                println!("{} {}:", get_pid(display, window), cmdline[0]);
+            }
         }
 
         XCloseDisplay(display);
