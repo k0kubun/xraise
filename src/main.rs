@@ -1,7 +1,7 @@
-extern crate procrs;
+extern crate psutil;
 extern crate x11;
 
-use procrs::pid::Pid;
+use psutil::process::Process;
 use std::env;
 use std::ffi::{CString, CStr};
 use std::mem::zeroed;
@@ -130,8 +130,12 @@ fn activate_window(display: *mut Display, window: Window) {
 
 fn get_cmdline(display: *mut Display, window: Window) -> Vec<String> {
     let pid = get_pid(display, window);
-    let process = Pid::new(pid).expect("Failed to fetch cmdline!");
-    process.cmdline
+    let process = Process::new(pid).expect("Failed to fetch cmdline!");
+    if let Some(cmdline) = process.cmdline_vec().expect("Empty cmdline!") {
+        cmdline
+    } else {
+        vec![]
+    }
 }
 
 fn match_window_name(display: *mut Display, window: Window, name: &String) -> bool {

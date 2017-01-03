@@ -8,4 +8,4 @@ readme = "README.md"
 
 [dependencies]
 x11 = { version = "2.12", features = ["xlib"] }
-procrs = { git = "https://github.com/keeperofdakeys/Process-Query" }
+psutil = { version = "1.0.0" }
