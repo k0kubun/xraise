@@ -5,3 +5,4 @@ authors = ["Takashi Kokubun <takashikkbn@gmail.com>"]
 
 [dependencies]
 x11 = { version = "2.12", features = ["xlib"] }
+procrs = { git = "https://github.com/keeperofdakeys/Process-Query" }
