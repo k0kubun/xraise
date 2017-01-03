@@ -51,9 +51,23 @@ fn get_client_list(display: *mut Display, size: *mut u64) -> *mut Window {
     }
 }
 
+fn get_windows(display: *mut Display) -> Vec<Window> {
+    let mut ret = vec![];
+    let mut size = 0;
+
+    unsafe {
+        let ptr = get_client_list(display, &mut size);
+
+        for i in 0..size {
+            let window = *ptr.offset(i as isize);
+            ret.push(window);
+        }
+    }
+    ret
+}
+
 fn get_pid(display: *mut Display, window: Window) -> i64 {
     unsafe {
-        let root = XDefaultRootWindow(display);
         let mut size = 0;
         let prop = get_property(display, window, "_NET_WM_PID", &mut size);
         if size > 0 {
@@ -71,11 +85,7 @@ fn main() {
             panic!("XOpenDisplay failed")
         }
 
-        let mut size = 0;
-        let windows = get_client_list(display, &mut size);
-
-        for i in 0..size {
-            let window = *windows.offset(i as isize);
+        for window in get_windows(display) {
             println!("hello {}", get_pid(display, window));
         }
 
