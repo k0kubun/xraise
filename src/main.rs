@@ -78,6 +78,40 @@ fn get_pid(display: *mut Display, window: Window) -> i64 {
     }
 }
 
+fn send_event(display: *mut Display, window: Window, name: &str) {
+    unsafe {
+        let data = {
+            let mut data = ClientMessageData::new();
+            data.set_long(0, 0);
+            data.set_long(1, 0);
+            data.set_long(2, 0);
+            data.set_long(3, 0);
+            data.set_long(4, 0);
+            data
+        };
+        let event = XClientMessageEvent {
+            type_: ClientMessage,
+            serial: 0,
+            send_event: True,
+            message_type: intern_atom(display, name),
+            window: window,
+            format: 32,
+            data: data,
+            display: display,
+        };
+
+        XSendEvent(display,
+                   XDefaultRootWindow(display),
+                   False,
+                   SubstructureNotifyMask | SubstructureRedirectMask,
+                   &mut XEvent::from(event));
+    }
+}
+
+fn activate_window(display: *mut Display, window: Window) {
+    send_event(display, window, "_NET_ACTIVE_WINDOW");
+}
+
 fn main() {
     unsafe {
         let display = XOpenDisplay(ptr::null());
@@ -86,7 +120,11 @@ fn main() {
         }
 
         for window in get_windows(display) {
-            println!("hello {}", get_pid(display, window));
+            let pid = get_pid(display, window);
+            if pid == 2230 {
+                activate_window(display, window);
+            }
+            println!("pid: {}", pid);
         }
 
         XCloseDisplay(display);
