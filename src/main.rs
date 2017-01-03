@@ -1,5 +1,7 @@
+extern crate procrs;
 extern crate x11;
 
+use procrs::pid::Pid;
 use std::ffi::CString;
 use std::mem::zeroed;
 use std::ptr;
@@ -66,12 +68,12 @@ fn get_windows(display: *mut Display) -> Vec<Window> {
     ret
 }
 
-fn get_pid(display: *mut Display, window: Window) -> i64 {
+fn get_pid(display: *mut Display, window: Window) -> i32 {
     unsafe {
         let mut size = 0;
         let prop = get_property(display, window, "_NET_WM_PID", &mut size);
         if size > 0 {
-            *prop
+            *prop as i32
         } else {
             panic!("_NET_WM_PID failed")
         }
@@ -121,10 +123,12 @@ fn main() {
 
         for window in get_windows(display) {
             let pid = get_pid(display, window);
-            if pid == 2230 {
+            let process = Pid::new(pid).expect("Failed to fetch cmdline!");
+            let ref cmdline = process.cmdline[0];
+            if cmdline == "/usr/lib/slack/slack" {
                 activate_window(display, window);
             }
-            println!("pid: {}", pid);
+            println!("cmdline: {}", cmdline);
         }
 
         XCloseDisplay(display);
