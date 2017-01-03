@@ -5,6 +5,7 @@ authors = ["Takashi Kokubun <takashikkbn@gmail.com>"]
 description = "Fast X Window Raiser"
 repository = "https://github.com/k0kubun/xraise"
 readme = "README.md"
+license = "MIT"
 
 [dependencies]
 x11 = { version = "2.12", features = ["xlib"] }
