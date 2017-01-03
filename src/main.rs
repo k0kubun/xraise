@@ -38,12 +38,8 @@ fn get_property(display: *mut Display,
                            &mut bytes_after,
                            &mut prop);
 
-        if n_items > 0 {
-            *size = n_items;
-            prop as *mut i64
-        } else {
-            panic!("XGetWindowProperty failed")
-        }
+        *size = n_items;
+        prop as *mut i64
     }
 }
 
@@ -52,6 +48,19 @@ fn get_client_list(display: *mut Display, size: *mut u64) -> *mut Window {
         let root = XDefaultRootWindow(display);
         let client_list = get_property(display, root, "_NET_CLIENT_LIST", size);
         client_list as *mut Window
+    }
+}
+
+fn get_pid(display: *mut Display, window: Window) -> i64 {
+    unsafe {
+        let root = XDefaultRootWindow(display);
+        let mut size = 0;
+        let prop = get_property(display, window, "_NET_WM_PID", &mut size);
+        if size > 0 {
+            *prop
+        } else {
+            panic!("_NET_WM_PID failed")
+        }
     }
 }
 
@@ -66,8 +75,8 @@ fn main() {
         let windows = get_client_list(display, &mut size);
 
         for i in 0..size {
-            let window = windows.offset(i as isize);
-            println!("hello");
+            let window = *windows.offset(i as isize);
+            println!("hello {}", get_pid(display, window));
         }
 
         XCloseDisplay(display);
