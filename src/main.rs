@@ -3,7 +3,7 @@ extern crate x11;
 
 use procrs::pid::Pid;
 use std::env;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
 use std::mem::zeroed;
 use std::ptr;
 use x11::xlib::*;
@@ -51,6 +51,18 @@ fn get_client_list(display: *mut Display, size: *mut u64) -> *mut Window {
         let root = XDefaultRootWindow(display);
         let client_list = get_property(display, root, "_NET_CLIENT_LIST", size);
         client_list as *mut Window
+    }
+}
+
+fn get_window_name(display: *mut Display, window: Window) -> Option<String> {
+    let mut size = 0;
+    unsafe {
+        let prop = get_property(display, window, "WM_NAME", &mut size);
+        if prop.is_null() {
+            None
+        } else {
+            CStr::from_ptr(prop as *mut i8).to_str().map(|it| it.to_string()).ok()
+        }
     }
 }
 
@@ -121,6 +133,19 @@ fn get_cmdline(display: *mut Display, window: Window) -> Vec<String> {
     process.cmdline
 }
 
+fn match_window_name(display: *mut Display, window: Window, name: &String) -> bool {
+    if let Some(actual) = get_window_name(display, window) {
+        if actual.len() > name.len() {
+            let end = actual[(actual.len() - name.len())..(actual.len() - 0)].to_string();
+            end == *name
+        } else {
+            actual == *name
+        }
+    } else {
+        false
+    }
+}
+
 fn main() {
     unsafe {
         let display = XOpenDisplay(ptr::null());
@@ -130,17 +155,30 @@ fn main() {
 
         let windows = get_windows(display);
         if let Some(command) = env::args().nth(1) {
-            for window in windows {
-                let cmdline = get_cmdline(display, window);
-                if cmdline[0] == command {
-                    activate_window(display, window);
-                    break;
+            if let Some(name) = env::args().nth(2) {
+                for window in windows {
+                    if get_cmdline(display, window)[0] == command &&
+                       match_window_name(display, window, &name) {
+                        activate_window(display, window);
+                        break;
+                    }
+                }
+            } else {
+                for window in windows {
+                    if get_cmdline(display, window)[0] == command {
+                        activate_window(display, window);
+                        break;
+                    }
                 }
             }
         } else {
             for window in windows {
                 let cmdline = get_cmdline(display, window);
-                println!("{} {}:", get_pid(display, window), cmdline[0]);
+                if let Some(name) = get_window_name(display, window) {
+                    println!("{} {}: '{}'", get_pid(display, window), cmdline[0], name);
+                } else {
+                    println!("{} {}:", get_pid(display, window), cmdline[0]);
+                }
             }
         }
 
