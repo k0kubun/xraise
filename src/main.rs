@@ -5,6 +5,7 @@ use procrs::pid::Pid;
 use std::env;
 use std::ffi::{CString, CStr};
 use std::mem::zeroed;
+use std::process::Command;
 use std::ptr;
 use x11::xlib::*;
 
@@ -155,11 +156,13 @@ fn main() {
 
         let windows = get_windows(display);
         if let Some(command) = env::args().nth(1) {
+            let mut found = false;
             if let Some(name) = env::args().nth(2) {
                 for window in windows {
                     if get_cmdline(display, window)[0] == command &&
                        match_window_name(display, window, &name) {
                         activate_window(display, window);
+                        found = true;
                         break;
                     }
                 }
@@ -167,9 +170,13 @@ fn main() {
                 for window in windows {
                     if get_cmdline(display, window)[0] == command {
                         activate_window(display, window);
+                        found = true;
                         break;
                     }
                 }
+            }
+            if !found {
+                Command::new(command).spawn().expect("Failed to spawn command!");
             }
         } else {
             for window in windows {
