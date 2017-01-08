@@ -41,6 +41,10 @@ $ xraise /opt/google/chrome/chrome "Google Chrome" # tail match
 $ xraise /opt/google/chrome/chrome LINE
 ```
 
+## Notice
+
+You may prefer `wmctrl -x -l` and `wmctrl -x -a $WM_CLASS`.
+
 ## License
 
 MIT License
